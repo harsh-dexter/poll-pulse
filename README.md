@@ -50,7 +50,7 @@ The project is organized into two main directories:
 
 1.  **Clone the Repository:**
     ```bash
-    git clone <YOUR_REPOSITORY_URL>
+    git clone https://github.com/harsh-dexter/poll-pulse
     cd poll-pulse-ui 
     ```
 
@@ -73,7 +73,7 @@ The project is organized into two main directories:
         ```bash
         npm run dev
         ```
-    *   The server will start on `ws://localhost:3001`.
+    *   The server will start on `ws://localhost:3001` by default.
 
 5.  **Run the Frontend Client:**
     *   Open a *second* terminal window.
@@ -86,9 +86,38 @@ The project is organized into two main directories:
 
 6.  **Use the Application:** Open the client URL in your browser. You can open multiple browser tabs/windows to simulate multiple users joining the same room.
 
+## Environment Variables (Frontend)
+
+The frontend uses a `.env` file to configure the WebSocket URL for connecting to the backend.
+
+*   Create a file named `.env` in the `client/` directory.
+*   Add the following line, replacing the URL with your backend's address:
+    ```
+    VITE_WEBSOCKET_URL=wss://your-backend-websocket-url.com
+    ```
+*   For local development, if the server is running on `ws://localhost:3001`, you can use:
+    ```
+    VITE_WEBSOCKET_URL=ws://localhost:3001
+    ```
+*   This `.env` file is ignored by Git (via `.gitignore`). For deployed environments, configure `VITE_WEBSOCKET_URL` as an environment variable in your hosting provider's settings.
+
+## Deployment
+
+*   **Backend:** The server in the `server/` directory can be deployed to any Node.js hosting environment (e.g., Render, Heroku, AWS). Ensure the `PORT` environment variable is correctly set by the hosting provider if it's not 3001.
+*   **Frontend:** The client in the `client/` directory is a static Vite application.
+    *   Build the application:
+        ```bash
+        cd client
+        npm run build
+        ```
+    *   Deploy the contents of the `client/dist/` folder to any static site hosting service (e.g., Render, Vercel, Netlify, GitHub Pages).
+    *   **Crucially**, ensure the `VITE_WEBSOCKET_URL` environment variable is set in your frontend hosting provider's settings to point to your deployed backend WebSocket URL (e.g., `wss://poll-pulse.onrender.com`).
+
 ## Backend Architecture: State Sharing & Room Management
 
-The backend manages the application state entirely in memory, suitable for the assignment's scope. Here's how it works:
+The backend's vote state sharing and room management are structured around an in-memory model, primarily orchestrated by `server/src/roomManager.ts`. Each poll room is an independent entity holding its own vote counts, user list, and timer status. Real-time updates and state synchronization with clients are achieved through WebSocket messages, ensuring all participants in a room see live changes.
+
+The backend manages the application state entirely in memory, suitable for the assignment's scope. Here's how it works in more detail:
 
 1.  **Room Storage (`server/src/roomManager.ts`):**
     *   A global `Map` object (`rooms`) stores all active poll rooms. The key is the unique `roomCode` (string), and the value is a `Room` object containing all information about that specific poll.
