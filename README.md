@@ -101,18 +101,6 @@ The frontend uses a `.env` file to configure the WebSocket URL for connecting to
     ```
 *   This `.env` file is ignored by Git (via `.gitignore`). For deployed environments, configure `VITE_WEBSOCKET_URL` as an environment variable in your hosting provider's settings.
 
-## Deployment
-
-*   **Backend:** The server in the `server/` directory can be deployed to any Node.js hosting environment (e.g., Render, Heroku, AWS). Ensure the `PORT` environment variable is correctly set by the hosting provider if it's not 3001.
-*   **Frontend:** The client in the `client/` directory is a static Vite application.
-    *   Build the application:
-        ```bash
-        cd client
-        npm run build
-        ```
-    *   Deploy the contents of the `client/dist/` folder to any static site hosting service (e.g., Render, Vercel, Netlify, GitHub Pages).
-    *   **Crucially**, ensure the `VITE_WEBSOCKET_URL` environment variable is set in your frontend hosting provider's settings to point to your deployed backend WebSocket URL (e.g., `wss://poll-pulse.onrender.com`).
-
 ## Backend Architecture: State Sharing & Room Management
 
 The backend's vote state sharing and room management are structured around an in-memory model, primarily orchestrated by `server/src/roomManager.ts`. Each poll room is an independent entity holding its own vote counts, user list, and timer status. Real-time updates and state synchronization with clients are achieved through WebSocket messages, ensuring all participants in a room see live changes.
