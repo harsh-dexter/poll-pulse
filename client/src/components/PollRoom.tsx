@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import VoteButton from './VoteButton';
 import Timer from './Timer';
 import { Button } from "@/components/ui/button";
@@ -185,10 +185,10 @@ const PollRoom: React.FC<PollRoomProps> = ({
     };
   }, [subscribe, toast, onBackToHome, username, voteStorageKey, pollData.voteCounts]);
 
-  const handleVote = (option: VoteOptionKey) => {
+  const handleVote = useCallback((option: VoteOptionKey) => {
     if (pollData.votingEnded || currentUserHasVoted) return;
     sendMessage('cast-vote', { roomCode, voteOption: option, username });
-  };
+  }, [pollData.votingEnded, currentUserHasVoted, sendMessage, roomCode, username]);
 
   const copyRoomCode = () => {
     navigator.clipboard.writeText(roomCode);

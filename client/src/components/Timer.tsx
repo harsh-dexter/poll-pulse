@@ -7,7 +7,7 @@ interface TimerProps {
 
 const INITIAL_DURATION = 60; // For visual consistency
 
-const Timer: React.FC<TimerProps> = ({ remainingTime }) => {
+const TimerComponent: React.FC<TimerProps> = ({ remainingTime }) => {
   const circumference = 2 * Math.PI * 45; // Radius 45
   // Progress for visual (based on initial duration)
   const progressRatio = Math.max(0, Math.min(1, remainingTime / INITIAL_DURATION));
@@ -52,4 +52,5 @@ const Timer: React.FC<TimerProps> = ({ remainingTime }) => {
   );
 };
 
+const Timer = React.memo(TimerComponent);
 export default Timer;

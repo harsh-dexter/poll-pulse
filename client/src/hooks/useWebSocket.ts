@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const WEBSOCKET_URL = 'ws://localhost:3001';
+const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL || 'ws://localhost:3001'; // Fallback for safety
 
 interface WebSocketMessage {
   type: string;
