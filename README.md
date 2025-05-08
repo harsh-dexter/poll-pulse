@@ -101,31 +101,42 @@ The frontend uses a `.env` file to configure the WebSocket URL for connecting to
     ```
 *   This `.env` file is ignored by Git (via `.gitignore`). For deployed environments, configure `VITE_WEBSOCKET_URL` as an environment variable in your hosting provider's settings.
 
-## Backend Architecture: State Sharing & Room Management
+## Backend Architecture: Vote State Sharing & Room Management
 
-The backend's vote state sharing and room management are structured around an in-memory model, primarily orchestrated by `server/src/roomManager.ts`. Each poll room is an independent entity holding its own vote counts, user list, and timer status. Real-time updates and state synchronization with clients are achieved through WebSocket messages, ensuring all participants in a room see live changes.
+The backend uses an in-memory architecture to manage poll rooms and synchronize vote states in real time. This design keeps the system lightweight and responsive, ideal for the assignment’s scope. The logic is centered around three key files:
 
-The backend manages the application state entirely in memory, suitable for the assignment's scope. Here's how it works in more detail:
+- `roomManager.ts`: Manages all room data and state.
+- `server.ts`: Handles WebSocket connections and routing.
+- `eventHandlers.ts`: Processes client events and triggers state updates.
 
-1.  **Room Storage (`server/src/roomManager.ts`):**
-    *   A global `Map` object (`rooms`) stores all active poll rooms. The key is the unique `roomCode` (string), and the value is a `Room` object containing all information about that specific poll.
-    *   The `Room` object holds the `question`, current `voteCounts` (e.g., `{ cats: 0, dogs: 0 }`), `remainingTime`, `votingEnded` status, a `Map` of connected `users` (keyed by a unique user ID assigned on connection), and a `Set` of active `WebSocket` client connections (`clients`) currently in that room.
+### Room Management
 
-2.  **Connection Handling (`server/src/server.ts`):**
-    *   When a client connects via WebSocket, the server assigns it a unique ID (e.g., `user-1`).
-    *   The server listens for JSON messages from the client. Each message has a `type` (e.g., `join-room`, `cast-vote`) and a `payload`.
+Poll rooms are stored in a global `Map`, where each key is a unique `roomCode` and the value is a `Room` object. Each room independently tracks:
 
-3.  **Event Processing (`server/src/eventHandlers.ts`):**
-    *   Based on the message `type`, the corresponding handler function is called.
-    *   These handlers interact with the `roomManager` functions (e.g., `addUserToRoom`, `castUserVote`) to update the state stored in the `rooms` Map.
-    *   A separate `Map` (`clientRooms`) tracks which room each connected client (`ws.id`) is currently in, facilitating cleanup on disconnect.
+- The poll question  
+- Vote counts (e.g., `{ cats: 2, dogs: 3 }`)  
+- Connected users (with unique `userIds`)  
+- Active WebSocket clients  
+- Voting status and timer  
 
-4.  **State Sharing (Broadcasting):**
-    *   When a relevant state change occurs (e.g., a vote is cast, a user joins/leaves, the timer ends), the backend broadcasts update messages to clients.
-    *   Broadcasting is targeted to specific rooms using the `clients` Set stored within each `Room` object in the `roomManager`. Helper functions (`sendToClient`, `broadcastToRoom`) ensure messages are sent only to the relevant connected clients in a room. For example, a `vote-update` message containing the new `voteCounts` is sent to everyone in the room where the vote occurred.
+A second map (`clientRooms`) maps each WebSocket client to their current room for easy cleanup on disconnect.
 
-5.  **Timer Management:**
-    *   The timer (`setInterval`) is managed within the `roomManager`. It's started when the first user joins a room and hasn't already started.
-    *   On each tick, a callback provided by `eventHandlers` broadcasts the remaining time. When the timer finishes, another callback broadcasts the `voting-ended` event and updates the room state.
+### Vote State Sharing
 
-This in-memory approach keeps the backend simple and focused on real-time updates via WebSockets without needing external databases or complex state synchronization mechanisms.
+When a user connects, the server assigns a unique ID and listens for WebSocket messages. Messages follow a `{ type, payload }` structure and are routed via event handlers.
+
+Based on the message type (e.g., `join-room`, `cast-vote`), the server updates the relevant room’s state using helper functions in `roomManager.ts`.
+
+Whenever the state changes — like a vote is cast or a user joins — the server broadcasts an update (`vote-update`, `user-joined`, etc.) to all clients in that specific room using the room’s `clients` set. This ensures real-time, scoped updates without affecting other rooms.
+
+### Timer Handling
+
+Each room starts its timer (`setInterval`) when the first user joins. The remaining time is broadcasted every second. Once the timer reaches zero, the room's `votingEnded` flag is set to `true`, and a `voting-ended` event is sent to all connected clients.
+
+Timers and vote updates are fully decoupled from the client — ensuring consistent state even if users refresh or disconnect temporarily.
+
+---
+
+### Summary
+
+This architecture avoids external databases or persistent storage, focusing purely on fast, event-driven WebSocket communication. It supports multiple simultaneous rooms, isolates state cleanly per room, and handles disconnections gracefully — all while remaining simple and easy to scale if needed.
